@@ -156,12 +156,24 @@ export type TokenMatch = {
 }
 
 function tokenSwatches(tokens: ThemeTokens) {
-  return (["primary", "secondary"] as const).flatMap((scale) =>
+  const scales = (["primary", "secondary"] as const).flatMap((scale) =>
     COLOR_STEPS.map((step) => ({
       token: `${scale}.${step}`,
       hex: tokens.colors[scale][step].toLowerCase(),
     })),
   )
+  // Literal hex overrides the token file defines for a component.
+  const overrides = Object.entries(tokens.components).flatMap(([component, vars]) =>
+    Object.entries(vars ?? {})
+      .filter(([, value]) => value.startsWith("#"))
+      .map(([name, value]) => ({ token: `components.${component}.${name}`, hex: value.toLowerCase() })),
+  )
+  // themeVariables() emits black or white as the readable foreground on --primary.
+  const foregrounds = [
+    { token: "foreground (black)", hex: "#000000" },
+    { token: "foreground (white)", hex: "#ffffff" },
+  ]
+  return [...scales, ...overrides, ...foregrounds]
 }
 
 /** Every hex literal in the code, matched to the nearest brand token. */
