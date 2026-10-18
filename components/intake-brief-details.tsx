@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import type { Project } from "@/lib/api"
+import type { Project } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Check, Clock, LayoutGrid, Palette } from "lucide-react"
 

@@ -1,56 +1,19 @@
-"use client"
+import type { Metadata } from "next"
+import { redirect } from "next/navigation"
+import { OperatorDashboard } from "@/components/operator/operator-dashboard"
+import { loadDashboard } from "@/lib/dal"
+import { getOperator } from "@/lib/operator"
 
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import { AdminDashboard } from "@/components/admin-dashboard"
-import { authClient } from "@/lib/auth-client"
+export const metadata: Metadata = {
+  title: "Operator Taste Dashboard · TulipAI Admin",
+}
 
-export default function AdminDashboardPage() {
-  const router = useRouter()
-  const { data: session, isPending } = authClient.useSession()
-
-  useEffect(() => {
-    if (isPending) {
-      return
-    }
-
-    if (!session) {
-      router.replace("/login")
-      return
-    }
-
-    const role =
-      session.user && "role" in session.user
-        ? String(session.user.role)
-        : "user"
-
-    if (role !== "admin") {
-      authClient.signOut().finally(() => {
-        router.replace("/login")
-      })
-    }
-  }, [isPending, session, router])
-
-  if (isPending) {
-    return (
-      <div className="flex min-h-svh items-center justify-center">
-        <p className="text-muted-foreground">Loading admin session...</p>
-      </div>
-    )
+export default async function DashboardPage() {
+  const operator = await getOperator()
+  if (!operator) {
+    redirect("/login")
   }
 
-  if (!session) {
-    return null
-  }
-
-  const role =
-    session.user && "role" in session.user
-      ? String(session.user.role)
-      : "user"
-
-  if (role !== "admin") {
-    return null
-  }
-
-  return <AdminDashboard />
+  const data = await loadDashboard()
+  return <OperatorDashboard operator={operator} data={data} />
 }
