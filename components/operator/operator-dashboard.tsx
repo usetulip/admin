@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils"
 import { AssetViewer } from "./asset-viewer"
 import { BlockEditorDialog } from "./block-editor-dialog"
 import { GovernancePanel } from "./governance-panel"
+import { GenerationCard } from "./generation-card"
 import { IntakeQueueList, ProjectBriefPanel } from "./intake-queue"
 import { PublishPanel } from "./publish-panel"
 
@@ -196,7 +197,8 @@ export function OperatorDashboard({ operator, data }: { operator: Operator; data
                 </TabsTrigger>
                 <TabsTrigger value="publish">Publish</TabsTrigger>
               </TabsList>
-              <TabsContent value="brief">
+              <TabsContent value="brief" className="flex flex-col gap-6">
+                <GenerationCard project={project} auditLog={data.auditLog} blocks={data.blocks} />
                 <ProjectBriefPanel
                   key={`${project.id}:${project.updatedAt}`}
                   project={project}
