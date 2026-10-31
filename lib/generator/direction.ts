@@ -3,6 +3,7 @@ import { ThemeTokensSchema, type ThemeTokens } from "@/lib/token-schema"
 import { layoutLabel, type Brief } from "./brief"
 import type Anthropic from "@anthropic-ai/sdk"
 import { addUsage, ask, extractFenced, GenerationError, type Usage } from "./generate-block"
+import { referenceBlocks } from "./references"
 
 // Art direction: one Claude call per brief, before any block is written. It
 // turns three hex codes and an archetype into a design language every block
@@ -15,21 +16,31 @@ export const FONT_CHOICES = {
     "Inter", "Geist", "IBM Plex Sans", "Manrope", "DM Sans", "Figtree", "Public Sans",
     "Instrument Sans", "Schibsted Grotesk", "Plus Jakarta Sans", "Onest", "Hanken Grotesk",
   ],
+  // Heading faces carry the personality. Neutral UI sans faces are left out on
+  // purpose: every screen the founder rejected used them for headings.
   display: [
-    "Inter Tight", "Instrument Sans", "Schibsted Grotesk", "Bricolage Grotesque", "Sora",
-    "Fraunces", "Newsreader", "Familjen Grotesk", "Geist", "Manrope",
+    "Instrument Serif", "Fraunces", "Newsreader", "Bricolage Grotesque", "Familjen Grotesk",
+    "Schibsted Grotesk", "Sora", "Instrument Sans",
   ],
   mono: ["JetBrains Mono", "IBM Plex Mono", "Geist Mono", "DM Mono"],
 } as const
 
+// Families served in one weight, which a wght list would make Google Fonts reject.
+const SINGLE_WEIGHT_AXES: Record<string, string> = { "Instrument Serif": "ital@0;1" }
+
 export const DirectionSchema = z.object({
+  concept: z.string().min(20).max(400),
+  composition: z.string().min(20).max(800),
   personality: z.string().min(20).max(1200),
   references: z.array(z.string().max(300)).min(2).max(4),
   typography: z.object({
     heading: z.enum(FONT_CHOICES.display),
     body: z.enum(FONT_CHOICES.sans),
     mono: z.enum(FONT_CHOICES.mono),
+    figures: z.enum(["mono", "heading"]),
     rationale: z.string().max(800),
+  }).refine((type) => type.heading !== type.body, {
+    message: "Heading and body must be different families",
   }),
   density: z.enum(["compact", "comfortable", "spacious"]),
   radius: z.enum(["sharp", "soft", "round"]),
@@ -65,17 +76,22 @@ export function applyDirection(tokens: ThemeTokens, direction: Direction): Theme
 /** Google Fonts stylesheet URL for the direction's three families. */
 export function googleFontsHref(tokens: ThemeTokens) {
   const families = [...new Set([tokens.typography.heading[0], tokens.typography.body[0], tokens.typography.mono[0]])]
-  const params = families.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700`).join("&")
+  const params = families
+    .map((f) => `family=${f.replace(/ /g, "+")}:${SINGLE_WEIGHT_AXES[f] ?? "wght@400;500;600;700"}`)
+    .join("&")
   return `https://fonts.googleapis.com/css2?${params}&display=swap`
 }
 
 const DIRECTION_SYSTEM = `You are the design director at Tulip, a studio that ships product UI for B2B software teams. Your work sits next to Linear, Stripe, Vercel, Ramp and Mercury, and clients pay for taste: a coherent point of view that makes their product look considered rather than assembled from a component kit.
 
-For each new client you write a short design direction that every engineer and every generated screen will follow. Be decisive and specific. "Clean and modern" says nothing; "hierarchy from weight and size, not boxes; one hairline divider per section; numbers set large in the heading face with tabular figures" is a direction.
+For each new client you write a short design direction that every engineer and every generated screen will follow. A safe direction is a failed direction. If it could describe any SaaS product, start again. Every client gets one idea you can name in a sentence, and every screen serves it. You will be shown the studio's quality bar: match its conviction and finish, and invent a different idea for this client.
+
+Be decisive and specific. "Clean and modern" says nothing; "hierarchy from weight and size, not boxes; one hairline divider per section; numbers set large in the heading face with tabular figures" is a direction.
 
 Constraints you design within:
 - Colours come only from the client's tokens: a primary scale, a secondary scale, their page background, plus neutral surfaces derived from the secondary scale. Raw hex values are forbidden in code.
 - Components are shadcn/ui primitives styled with Tailwind utilities on a 4px spacing grid.
+- Code reaches colour through semantic roles only: primary (step 600 of the primary scale, with an automatic readable foreground), secondary and accent tints, foreground, muted, border. Describe colour in those roles; numbered scale steps are not available in code.
 - Fonts must come from the lists given.
 
 Reply with one \`\`\`json code block matching the requested shape, and nothing else.`
@@ -92,12 +108,15 @@ ${notes.length ? `- Colour notes: ${notes.join(" ")}` : ""}
 
 Write the design direction as JSON with exactly these keys. Keep each prose field under about 600 characters and each list item under about 250; be specific rather than long.
 {
+  "concept": "the one idea behind this product's look, in a sentence you could say out loud, e.g. a well-kept ledger under a reading lamp",
+  "composition": "how screens are built: the big structural move, such as a dark rail beside a bright workspace, or open stats split by hairlines; the focal point; how dense they are",
   "personality": "2-3 sentences: who this product is for and how it should feel",
   "references": ["2-4 shipped products whose craft this should channel, with what to take from each"],
   "typography": {
     "heading": one of ${JSON.stringify(FONT_CHOICES.display)},
     "body": one of ${JSON.stringify(FONT_CHOICES.sans)},
     "mono": one of ${JSON.stringify(FONT_CHOICES.mono)},
+    "figures": "mono" | "heading" (which face sets the big numbers),
     "rationale": "why this pairing suits the brand"
   },
   "density": "compact" | "comfortable" | "spacious",
@@ -123,7 +142,9 @@ const issues = (error: z.ZodError | string) => (typeof error === "string" ? erro
 
 /** Writes the direction, sending validation errors back once before giving up. */
 export async function directBrief(brief: Brief, tokens: ThemeTokens, notes: string[]): Promise<{ direction: Direction; usage: Usage }> {
-  const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: directionPrompt(brief, tokens, notes) }]
+  const messages: Anthropic.Beta.BetaMessageParam[] = [
+    { role: "user", content: [...referenceBlocks(), { type: "text", text: directionPrompt(brief, tokens, notes) }] },
+  ]
   const first = await ask(DIRECTION_SYSTEM, messages, "high")
   let parsed = parseDirection(first.text)
   let usage = first.usage
@@ -143,9 +164,11 @@ export async function directBrief(brief: Brief, tokens: ThemeTokens, notes: stri
 /** The direction as the block prompt shows it. */
 export function directionBrief(direction: Direction) {
   return `Design direction for this client (follow it exactly; it is shared by every block in their product):
+- The idea: ${direction.concept}
+- Composition: ${direction.composition}
 - Personality: ${direction.personality}
 - Channel: ${direction.references.join("; ")}
-- Type: headings in ${direction.typography.heading}, body in ${direction.typography.body}, figures and code in ${direction.typography.mono}. ${direction.typography.rationale}
+- Type: headings in ${direction.typography.heading}, body in ${direction.typography.body}, IDs and code in ${direction.typography.mono}. Big numbers use the ${direction.typography.figures === "mono" ? "mono face, font-(family-name:--font-mono)" : "heading face"}. ${direction.typography.rationale}
 - Density: ${direction.density}. Corner radius: ${direction.radius}.
 - Surfaces: ${direction.surfaces}
 - Brand colour: ${direction.brandUsage}

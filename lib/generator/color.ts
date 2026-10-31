@@ -144,6 +144,17 @@ export function buildScale(brandHex: string, name: string): ScaleResult {
     }
   }
 
+  // A dark brand that already clears AA belongs on 600, the step buttons use,
+  // or a black brand gets grey buttons. Darker steps tail off towards black.
+  if (base.l < STEP_LIGHTNESS["600"] && contrastRatio(brand, "#ffffff") >= AA) {
+    scale["600"] = brand
+    const deeper = ["700", "800", "900", "950"] as const
+    deeper.forEach((step, i) => {
+      scale[step] = oklchToHex({ l: base.l * (1 - (i + 1) * 0.16), c: base.c * STEP_CHROMA[step], h: base.h })
+    })
+    return { scale, anchorStep: "600", notes }
+  }
+
   // Anchor the exact brand hex on the nearest step it can legally occupy.
   const candidates = [...COLOR_STEPS].sort(
     (a, b) => Math.abs(STEP_LIGHTNESS[a] - base.l) - Math.abs(STEP_LIGHTNESS[b] - base.l),

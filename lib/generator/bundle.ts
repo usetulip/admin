@@ -1,7 +1,7 @@
 import { strToU8, zipSync } from "fflate"
 import { themeVariables } from "@/lib/governance"
 import { COLOR_STEPS, type ThemeTokens } from "@/lib/token-schema"
-import { contrastRatio } from "./color"
+import { contrastRatio, hexToOklch, oklchToHex } from "./color"
 
 // The client's delivery bundle: published block sources, the theme as CSS for
 // Tailwind v4, the raw token file, and a Tokens Studio file that imports the
@@ -27,37 +27,36 @@ function slug(name: string) {
 
 const isDark = (hex: string) => contrastRatio(hex, "#ffffff") > contrastRatio(hex, "#000000")
 
-/** First step, in preference order, that reaches `min` contrast on `background`. */
-function readableStep(scale: ThemeTokens["colors"]["secondary"], order: (keyof typeof scale)[], background: string, min = 4.5) {
-  return scale[order.find((step) => contrastRatio(scale[step], background) >= min) ?? order[order.length - 1]]
-}
-
 /** shadcn variables for :root, driven by the client's tokens and page background. */
 export function themeCss(tokens: ThemeTokens, background: string) {
   const vars = themeVariables(tokens, ["button", "input", "card", "badge", "dialog", "navbar", "tooltip"])
   const { secondary } = tokens.colors
   const dark = isDark(background)
+  // Text and hairlines are near-neutral with a trace of the brand's hue. Taken
+  // straight from a vivid secondary scale, a rose brand gets maroon body copy.
+  const hue = hexToOklch(secondary["500"]).h
+  const neutral = (l: number) => oklchToHex({ l, c: 0.012, h: hue })
 
   // Surfaces follow the page background: light tints on light pages, deep
-  // shades on dark ones, with text steps checked against AA rather than assumed.
+  // shades on dark ones.
   const surfaces: Record<string, string> & { "--foreground": string } = dark
     ? {
-        "--foreground": readableStep(secondary, ["50", "100", "200"], background),
-        "--muted": secondary["900"],
-        "--muted-foreground": readableStep(secondary, ["300", "200", "100", "50"], background),
-        "--border": secondary["800"],
-        "--input": secondary["800"],
+        "--foreground": neutral(0.96),
+        "--muted": neutral(0.26),
+        "--muted-foreground": neutral(0.76),
+        "--border": neutral(0.32),
+        "--input": neutral(0.32),
         "--secondary": secondary["800"],
         "--secondary-foreground": secondary["50"],
         "--accent": secondary["900"],
         "--accent-foreground": secondary["50"],
       }
     : {
-        "--foreground": readableStep(secondary, ["950", "900", "800"], background),
-        "--muted": secondary["50"],
-        "--muted-foreground": readableStep(secondary, ["700", "800", "900", "950"], background),
-        "--border": secondary["200"],
-        "--input": secondary["200"],
+        "--foreground": neutral(0.2),
+        "--muted": neutral(0.965),
+        "--muted-foreground": neutral(0.46),
+        "--border": neutral(0.915),
+        "--input": neutral(0.915),
       }
 
   const root: Record<string, string> = {

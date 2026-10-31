@@ -36,7 +36,7 @@ export const LAYOUTS: Record<string, { label: string; shell: BlockSpec }> = {
         "Collapsible sidebar with the product name, 5-6 navigation items with icons and an active state",
         "Top bar with a page title, a search input and a user menu trigger",
         "A row of 4 KPI cards (label, value, change vs last period with an up/down indicator)",
-        "A main content area with a section heading and a placeholder region children can fill (accept a `children` prop)",
+        "Below the KPIs, a real working section full of realistic data showing what needs attention today, with one clear primary action",
       ],
       primitives: ["button", "card", "input", "badge", "separator", "avatar", "dropdown-menu"],
     },
@@ -63,7 +63,7 @@ export const LAYOUTS: Record<string, { label: string; shell: BlockSpec }> = {
       requirements: [
         "Header with the report title, a period selector (Select) and an Export button",
         "A row of 4 metric cards with value, delta and a short caption",
-        "A two-column grid below: a large panel for a primary visualisation (accept a `children` prop) and a ranked list of top segments with percentages and progress bars",
+        "A two-column grid below: a large annotated chart with real data, and a ranked list of top segments with percentages and progress bars",
       ],
       primitives: ["button", "card", "select", "badge", "progress", "separator"],
     },
@@ -100,7 +100,7 @@ export const FEATURES: Record<string, BlockSpec> = {
     name: "Modal form",
     componentName: "ModalFormBlock",
     requirements: [
-      "A trigger Button that opens a Dialog containing a form relevant to the layout's domain",
+      "A Dialog that is open by default, over a realistic page behind it, containing a form relevant to the layout's domain, plus the trigger Button that reopens it",
       "3-5 labelled fields (Input, Select, Textarea) with inline validation messages on submit",
       "Footer with Cancel and a primary submit Button that shows a pending state",
     ],
@@ -121,7 +121,7 @@ export const FEATURES: Record<string, BlockSpec> = {
     name: "Date range picker",
     componentName: "DateRangePickerBlock",
     requirements: [
-      "A Popover trigger Button showing the selected range (formatted with date-fns), opening a two-month Calendar in range mode",
+      "A Popover trigger Button showing the selected range (formatted with date-fns), opening a two-month Calendar in range mode, with the numbers and chart below it responding to the range",
       "Preset shortcuts (Today, Last 7 days, Last 30 days, This quarter)",
       "Apply and Clear actions",
     ],
@@ -131,7 +131,7 @@ export const FEATURES: Record<string, BlockSpec> = {
     name: "Team members",
     componentName: "TeamMembersBlock",
     requirements: [
-      "A Card listing 5-6 team members: Avatar with image and initials fallback, name, email, role Badge, online indicator",
+      "A team page listing 5-6 members: Avatar with image and initials fallback, name, email, role Badge, online indicator",
       "An overlapping avatar stack summary with a +N overflow count",
       "An Invite button",
     ],

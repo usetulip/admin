@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const apiUrl = process.env.API_URL ?? "http://localhost:4000";
 
 const nextConfig: NextConfig = {
+  // The generator reads its reference screens from disk at runtime.
+  outputFileTracingIncludes: {
+    "/api/generate": ["./lib/generator/references/**"],
+    "/dashboard": ["./lib/generator/references/**"],
+  },
   async rewrites() {
     return [
       {

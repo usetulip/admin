@@ -4,6 +4,7 @@ import type { ThemeTokens } from "@/lib/token-schema"
 import type { BlockSpec, Brief } from "./brief"
 import type { Direction } from "./direction"
 import { SYSTEM_PROMPT, blockPrompt, critiquePrompt, repairPrompt } from "./prompts"
+import { referenceBlocks } from "./references"
 
 // Writes one block with Claude. Each draft goes through the same auditBlock()
 // the operator dashboard runs, and violations go back for up to MAX_REPAIRS
@@ -165,7 +166,7 @@ export async function generateBlock(
 ): Promise<BlockResult> {
   const started = Date.now()
   const messages: Anthropic.Beta.BetaMessageParam[] = [
-    { role: "user", content: blockPrompt(brief, spec, options.direction) },
+    { role: "user", content: [...referenceBlocks(), { type: "text", text: blockPrompt(brief, spec, options.direction) }] },
   ]
   let usage = emptyUsage()
   const attempts: AttemptRecord[] = []

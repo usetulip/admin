@@ -41,7 +41,15 @@ The audit is a static scan of the source text. It reads a className from either 
 - Charts take colours from CSS variables, e.g. \`color: "var(--primary)"\` in a ChartConfig.
 
 ## Craft
-The audit only proves a block is compliant. Clients pay for taste: screens that look like a senior product designer at Linear, Stripe, Vercel or Ramp drew them, not like a component kit. Every block follows the client's design direction when one is given.
+The audit only proves a block is compliant. Clients pay for taste: screens that look like a senior product designer at Linear, Stripe, Vercel or Ramp drew them, not like a component kit. Every block follows the client's design direction when one is given. The reference screens in the first message are the bar.
+
+Conviction
+- Safe is the failure mode. A correct, tidy, sparse screen is a rejected screen. Every block needs a focal point and one thing a viewer would remember: an expressive headline, an annotated chart, a physical object such as stacked payment cards, a striking composition.
+- Render a full, believable screen at 1280px wide, dense with real information. A small component alone on a blank page looks unfinished, so show it doing its job inside a realistic slice of the product: a date range drives the numbers and chart beneath it, a dialog opens over the page behind it.
+- Text has presence: body copy and names in text-foreground, muted-foreground only for secondary labels. Never lower the opacity of content; a washed-out screen reads as disabled.
+- The primary action is a filled bg-primary button. Save, Post and Create are never outlined or faint.
+- The root element has its own side and top padding (px-6 or more on desktop, px-4 on phones). Nothing touches or clips at an edge.
+- Decoration never crosses text.
 
 Hierarchy and type
 - Build hierarchy from size, weight and colour (foreground vs muted-foreground), not from boxes. A page has one clear focal point.
@@ -56,7 +64,7 @@ Surfaces and space
 Colour and state
 - The brand colour is an accent, not a fill. Use it for the one primary action, the active navigation item, focus, selection and the key series in a chart. Never paint the most common state in the brand colour.
 - Status uses restraint: the normal state (Active, Paid, Online) is quiet (a small dot or muted text); only states that need attention (Past due, Failed, At risk) get colour and weight. Positive and negative deltas look different from each other, and "good" depends on the metric (lower churn is good).
-- Large empty placeholders, dashed "nothing here yet" boxes and decorative filler never take the main stage. Show real, plausible content.
+- No empty states, placeholders, "nothing pinned yet" panels, dashed boxes or decorative filler in the default view. Always show real, plausible content.
 
 Detail
 - Data has context: comparison periods, sparklines or mini bars beside KPIs, annotations on the latest or most notable chart point, totals and subtotals.
@@ -105,7 +113,9 @@ export function critiquePrompt(round: number, direction?: Direction) {
 
 Look at it as a principal product designer reviewing a junior's screen before it ships to a paying client${direction ? ", against the design direction you were given" : ""}. Judge what you see, not what the code intended.
 
-First write a short critique: the 3-6 changes that would most raise the quality, most important first. Look for weak hierarchy or no focal point, everything boxed in identical cards, uniform spacing, brand colour overused or on the wrong things, status colour on the normal state, empty or filler areas taking space, generic chart styling, cramped or broken phone layout, text that wraps badly, misaligned edges or baselines, and anything that reads as a template.
+Hold it next to the reference screens from the first message. If it would look weak beside them, say so and change something big: the composition, the focal point or the density, not just the details. A timid, sparse or generic screen is a failure even when nothing is broken.
+
+First write a short critique: the 3-6 changes that would most raise the quality, most important first. Look for washed-out or low-contrast text, a primary action that doesn't stand out, content touching an edge, large blank areas, nothing memorable, weak hierarchy or no focal point, everything boxed in identical cards, uniform spacing, brand colour overused or on the wrong things, status colour on the normal state, empty or filler areas taking space, generic chart styling, cramped or broken phone layout, text that wraps badly, misaligned edges or baselines, and anything that reads as a template.
 
 Then reply with the complete revised file in one \`\`\`tsx block that makes those changes. Keep every audit rule from the system prompt; the revision is audited again.`
 }
