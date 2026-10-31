@@ -2,6 +2,7 @@
 
 import { and, desc, eq, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { after } from "next/server"
 import { z } from "zod"
 import { getDb } from "@/db"
 import {
@@ -17,6 +18,8 @@ import {
   type PipelineStep,
 } from "@/db/schema"
 import { blockHash, canonicalJson } from "@/lib/dal"
+import { GenerationError } from "@/lib/generator/generate-block"
+import { buildProjectBundle, claimGeneration, runGeneration } from "@/lib/generator/run"
 import { notifyMcpServer, type NotifyResult } from "@/lib/mcp-notify"
 import { UnauthorizedError, requireOperator, type Operator } from "@/lib/operator"
 import { publishGate } from "@/lib/publish-gate"
@@ -212,6 +215,31 @@ export async function deleteProject(projectId: string) {
       if (!row) throw new ActionError("Project not found")
       await log(tx, operator, "project.deleted", "project", id, { userId: row.userId })
     })
+  })
+}
+
+// --- Generator: brief → draft blocks, published blocks → delivery bundle ---
+
+/** Starts (or restarts) AI generation for a brief. Runs after the response. */
+export async function startGeneration(projectId: string) {
+  return run(async (operator) => {
+    const id = Uuid.parse(projectId)
+    if (!(await claimGeneration(id, operator.email))) {
+      throw new ActionError("Generation is already running for this brief")
+    }
+    after(() => runGeneration(id))
+  })
+}
+
+export async function buildDeliveryBundle(projectId: string) {
+  return run(async (operator) => {
+    const id = Uuid.parse(projectId)
+    try {
+      return await buildProjectBundle(id, operator.email)
+    } catch (err) {
+      if (err instanceof GenerationError) throw new ActionError(err.message)
+      throw err
+    }
   })
 }
 

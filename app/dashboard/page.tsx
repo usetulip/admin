@@ -4,6 +4,10 @@ import { OperatorDashboard } from "@/components/operator/operator-dashboard"
 import { loadDashboard } from "@/lib/dal"
 import { getOperator } from "@/lib/operator"
 
+// Server Actions run on this route; block generation continues after the
+// response (next/server after()) and can take several minutes.
+export const maxDuration = 800
+
 export const metadata: Metadata = {
   title: "Operator Taste Dashboard · TulipAI Admin",
 }
